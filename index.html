@@ -24,7 +24,7 @@
   select:focus,input:focus,textarea:focus{outline:2px solid var(--accent);border-color:transparent}
   textarea{resize:vertical}
 
- 
+  /* login */
   #login{min-height:100vh;display:grid;place-items:center;padding:20px}
   .login-card{background:var(--card);padding:32px;border-radius:16px;width:100%;max-width:380px;box-shadow:0 8px 30px rgba(20,33,61,.1)}
   .login-card h1{margin:0 0 4px;font-size:22px} .login-card p{margin:0 0 20px;color:var(--muted)}
@@ -40,7 +40,7 @@
   .chip{display:inline-block;background:#e8edf5;border-radius:99px;padding:4px 12px;margin:0 6px 6px 0;font-size:13px}
   .chip a{color:var(--danger);margin-left:6px;font-size:12px;text-decoration:none}
 
-
+  /* app shell */
   #app{display:flex;min-height:100vh}
   aside{width:230px;background:var(--nav);color:var(--nav-ink);padding:20px 14px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
   aside .brand{font-weight:800;color:#fff;font-size:17px;margin:0 8px 22px}
@@ -90,6 +90,7 @@
 <body>
 <div id="toast"></div>
 
+<!-- ============ LOGIN ============ -->
 <section id="login" class="hidden">
   <div class="login-card">
     <h1>REAC Time Tracker</h1>
@@ -97,6 +98,7 @@
     <div id="loginErr"></div>
     <div id="loginInfo"></div>
 
+    <!-- Sign in -->
     <form id="formSignin" class="authstep">
       <div class="field"><label for="email">Gmail</label><input id="email" type="email" autocomplete="username" required></div>
       <div class="field"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required></div>
@@ -104,6 +106,7 @@
       <div class="authlinks"><a href="#" data-go="signup">Create account</a><a href="#" data-go="forgot">Forgot password?</a></div>
     </form>
 
+    <!-- Create account -->
     <form id="formSignup" class="authstep hidden">
       <div class="field"><label for="suName">Full name</label><input id="suName" type="text" autocomplete="name" required></div>
       <div class="field"><label for="suEmail">Gmail</label><input id="suEmail" type="email" autocomplete="username" required></div>
@@ -113,18 +116,21 @@
       <div class="authlinks"><a href="#" data-go="signin">Back to sign in</a></div>
     </form>
 
+    <!-- Enter the emailed code (used for both create account and forgot password) -->
     <form id="formCode" class="authstep hidden">
       <div class="field"><label for="codeInput">Code from your email</label><input id="codeInput" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="10" required></div>
       <button type="submit" id="btnVerify">Verify</button>
       <div class="authlinks"><button type="button" class="linkbtn" id="btnResend">Resend code</button><a href="#" data-go="signin">Back to sign in</a></div>
     </form>
 
+    <!-- Forgot password -->
     <form id="formForgot" class="authstep hidden">
       <div class="field"><label for="fgEmail">Gmail</label><input id="fgEmail" type="email" autocomplete="username" required></div>
       <button type="submit" id="btnForgot">Email me a code</button>
       <div class="authlinks"><a href="#" data-go="signin">Back to sign in</a></div>
     </form>
 
+    <!-- Set a new password -->
     <form id="formNewPass" class="authstep hidden">
       <div class="field"><label for="npPass">New password (at least 8 characters)</label><input id="npPass" type="password" autocomplete="new-password" minlength="8" required></div>
       <div class="field"><label for="npPass2">Confirm new password</label><input id="npPass2" type="password" autocomplete="new-password" minlength="8" required></div>
@@ -134,6 +140,7 @@
   </div>
 </section>
 
+<!-- ============ APP ============ -->
 <div id="app" class="hidden">
   <aside>
     <div class="brand">REAC Tracker</div>
@@ -146,7 +153,7 @@
   </aside>
 
   <main>
-    
+    <!-- DASHBOARD -->
     <section id="view-dashboard">
       <h2>Dashboard</h2>
 
@@ -186,12 +193,14 @@
       </div>
     </section>
 
+    <!-- HISTORY -->
     <section id="view-history" class="hidden">
       <h2>My History — Today</h2>
       <div class="stats" id="histStats"></div>
       <div class="card tablewrap" id="histTable"></div>
     </section>
 
+    <!-- ADMIN -->
     <section id="view-admin" class="hidden">
       <h2>Admin — All Staff</h2>
       <div class="card">
@@ -240,7 +249,7 @@ function toast(msg, isErr) {
   clearTimeout(toast._t); toast._t = setTimeout(() => t.className = '', 3500);
 }
 
-
+/* ---------------- auth ---------------- */
 let recovering = false, pendingEmail = '', codeType = 'signup', resendTimer = null;
 const STEPS = { signin: 'formSignin', signup: 'formSignup', code: 'formCode', forgot: 'formForgot', newpass: 'formNewPass' };
 const SUBS = {
@@ -279,7 +288,7 @@ const cleanEmail = id => $(id).value.trim().toLowerCase();
 
 document.querySelectorAll('[data-go]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); showAuth(a.dataset.go); }));
 
-
+// Sign in
 $('formSignin').addEventListener('submit', async e => {
   e.preventDefault(); setMsg('', '');
   await busy($('loginBtn'), async () => {
@@ -296,7 +305,7 @@ $('formSignin').addEventListener('submit', async e => {
   });
 });
 
-
+// Create account -> code by email
 $('formSignup').addEventListener('submit', async e => {
   e.preventDefault(); setMsg('', '');
   if ($('suPass').value.length < 8) return setMsg('Password must be at least 8 characters.');
@@ -311,7 +320,7 @@ $('formSignup').addEventListener('submit', async e => {
   });
 });
 
-
+// Forgot password -> code by email
 $('formForgot').addEventListener('submit', async e => {
   e.preventDefault(); setMsg('', '');
   await busy($('btnForgot'), async () => {
@@ -324,7 +333,7 @@ $('formForgot').addEventListener('submit', async e => {
   });
 });
 
-
+// Enter the code
 $('formCode').addEventListener('submit', async e => {
   e.preventDefault(); setMsg('', '');
   await busy($('btnVerify'), async () => {
@@ -343,7 +352,7 @@ $('btnResend').addEventListener('click', async () => {
   startCooldown(); setMsg('', 'A new code was sent.');
 });
 
-
+// Set new password
 $('formNewPass').addEventListener('submit', async e => {
   e.preventDefault(); setMsg('', '');
   if ($('npPass').value.length < 8) return setMsg('Password must be at least 8 characters.');
@@ -407,6 +416,7 @@ async function loadLookups() {
   lookupsLoaded = true;
 }
 
+/* ---------------- navigation ---------------- */
 $('nav').addEventListener('click', e => {
   const b = e.target.closest('button[data-view]'); if (!b) return;
   document.querySelectorAll('#nav button').forEach(x => x.classList.toggle('active', x === b));
@@ -415,6 +425,7 @@ $('nav').addEventListener('click', e => {
   if (b.dataset.view === 'admin') { initAdmin(); loadAllowed(); }
 });
 
+/* ---------------- state ---------------- */
 async function refresh() {
   const [s, b, t, bd] = await Promise.all([
     sb.from('shifts').select('*').eq('user_id', me.id).is('end_shift', null).maybeSingle(),
@@ -460,6 +471,7 @@ function tick() {
   $('taskTimer').textContent = S.task ? hms((now - new Date(S.task.start_at)) / 1000) : '00:00:00';
 }
 
+/* ---------------- actions ---------------- */
 async function act(fn, args, okMsg) {
   document.querySelectorAll('#view-dashboard button').forEach(b => b.disabled = true);
   const { error } = await sb.rpc(fn, args);
@@ -484,6 +496,7 @@ $('btnComplete').onclick = async () => {
   if (ok) { $('notes').value = ''; $('ptName').value = ''; $('selTask').value = ''; $('selAccount').value = ''; checkNotes(); }
 };
 
+/* ---------------- history ---------------- */
 async function loadHistory() {
   const start = new Date(); start.setHours(0, 0, 0, 0);
   const { data, error } = await sb.from('report_task_logs').select('*').eq('email', me.email)
@@ -504,6 +517,7 @@ function taskTable(rows, showUser) {
     '</tbody></table>';
 }
 
+/* ---------------- admin ---------------- */
 function initAdmin() {
   if (!$('fromDate').value) {
     const d = new Date(), f = new Date(); f.setDate(d.getDate() - 6);
