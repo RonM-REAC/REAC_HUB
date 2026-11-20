@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>REAC Time Tracker</title>
+<style>
+  :root{
+    --bg:#f3f5f9; --card:#fff; --ink:#1b2430; --muted:#6b7686; --line:#e2e7ef;
+    --nav:#14213d; --nav-ink:#cfd8ea; --accent:#0f9d8a; --accent-d:#0b7a6b;
+    --warn:#e08a00; --danger:#c8382f; --radius:12px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+  .hidden{display:none!important}
+  button{font:inherit;cursor:pointer;border:0;border-radius:8px;padding:10px 16px;background:var(--accent);color:#fff;font-weight:600}
+  button:hover:not(:disabled){background:var(--accent-d)}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  button.secondary{background:#e8edf5;color:var(--ink)}
+  button.secondary:hover:not(:disabled){background:#dbe3ef}
+  button.warn{background:var(--warn)} button.danger{background:var(--danger)}
+  label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bottom:4px}
+  select,input,textarea{width:100%;font:inherit;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+  select:focus,input:focus,textarea:focus{outline:2px solid var(--accent);border-color:transparent}
+  textarea{resize:vertical}
+
+  /* login */
+  #login{min-height:100vh;display:grid;place-items:center;padding:20px}
+  .login-card{background:var(--card);padding:32px;border-radius:16px;width:100%;max-width:380px;box-shadow:0 8px 30px rgba(20,33,61,.1)}
+  .login-card h1{margin:0 0 4px;font-size:22px} .login-card p{margin:0 0 20px;color:var(--muted)}
+  .login-card .field{margin-bottom:14px} .login-card button{width:100%}
+  #loginErr{color:var(--danger);font-size:13px;min-height:18px;margin-bottom:8px}
+
+  /* app shell */
+  #app{display:flex;min-height:100vh}
+  aside{width:230px;background:var(--nav);color:var(--nav-ink);padding:20px 14px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+  aside .brand{font-weight:800;color:#fff;font-size:17px;margin:0 8px 22px}
+  aside nav{display:flex;flex-direction:column;gap:4px}
+  aside nav button{background:transparent;color:var(--nav-ink);text-align:left;font-weight:500}
+  aside nav button:hover{background:rgba(255,255,255,.08)}
+  aside nav button.active{background:rgba(255,255,255,.14);color:#fff;font-weight:700}
+  aside .me{margin-top:auto;font-size:12px;padding:8px}
+  aside .me b{display:block;color:#fff;word-break:break-all}
+  main{flex:1;padding:26px;max-width:1100px}
+  h2{margin:0 0 16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-bottom:16px}
+  .card h3{margin:0 0 12px;font-size:16px}
+  .row{display:flex;flex-wrap:wrap;gap:10px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+
+  .status{display:flex;flex-wrap:wrap;gap:22px;align-items:center;margin-bottom:14px}
+  .pill{display:inline-block;padding:4px 12px;border-radius:99px;font-size:13px;font-weight:700;background:#e8edf5;color:var(--muted)}
+  .pill.on{background:#d6f4ee;color:var(--accent-d)} .pill.brk{background:#fdebd0;color:#9a5b00}
+  .timer{font-variant-numeric:tabular-nums;font-size:22px;font-weight:700}
+  .timer small{display:block;font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+
+  .running{background:#effaf8;border:1px solid #bfe9e1;border-radius:10px;padding:14px;margin-bottom:14px}
+  .running .big{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums}
+
+  #notes{min-height:240px}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+  td.notes{max-width:340px;white-space:pre-wrap;word-break:break-word}
+  .tablewrap{overflow-x:auto}
+  .empty{color:var(--muted);padding:10px 0}
+  .stats{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 16px;min-width:140px}
+  .stat b{display:block;font-size:22px} .stat span{font-size:12px;color:var(--muted)}
+
+  #toast{position:fixed;right:18px;bottom:18px;background:#1b2430;color:#fff;padding:12px 16px;border-radius:10px;max-width:360px;z-index:50;opacity:0;transform:translateY(10px);transition:.25s;pointer-events:none}
+  #toast.show{opacity:1;transform:none} #toast.err{background:var(--danger)}
+
+  @media (max-width:760px){
+    #app{flex-direction:column} aside{width:100%;height:auto;position:static;flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px;padding:10px}
+    aside .brand{margin:0 8px 0 0} aside nav{flex-direction:row} aside .me{margin:0 0 0 auto}
+    main{padding:14px} .grid3{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div id="toast"></div>
+
+<!-- ============ LOGIN ============ -->
+<section id="login" class="hidden">
+  <form class="login-card" id="loginForm">
+    <h1>REAC Time Tracker</h1>
+    <p>Sign in with your Gmail and password.</p>
+    <div class="field"><label for="email">Gmail</label><input id="email" type="email" autocomplete="username" required></div>
+    <div class="field"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required></div>
+    <div id="loginErr"></div>
+    <button type="submit" id="loginBtn">Sign in</button>
+  </form>
+</section>
+
+<!-- ============ APP ============ -->
+<div id="app" class="hidden">
+  <aside>
+    <div class="brand">REAC Tracker</div>
+    <nav id="nav">
+      <button data-view="dashboard" class="active">Dashboard</button>
+      <button data-view="history">My History</button>
+      <button data-view="admin" id="navAdmin" class="hidden">Admin</button>
+    </nav>
+    <div class="me"><b id="meName"></b><span id="meRole"></span><br><button class="secondary" id="signOut" style="margin-top:10px;padding:6px 12px">Sign out</button></div>
+  </aside>
+
+  <main>
+    <!-- DASHBOARD -->
+    <section id="view-dashboard">
+      <h2>Dashboard</h2>
+
+      <div class="card">
+        <div class="status">
+          <div><span class="pill" id="shiftPill">Not clocked in</span></div>
+          <div class="timer"><small>Shift time</small><span id="shiftTimer">00:00:00</span></div>
+          <div class="timer"><small>Break time (this shift)</small><span id="breakTimer">00:00:00</span></div>
+        </div>
+        <div class="row">
+          <button id="btnIn">Time In</button>
+          <button id="btnBreak" class="warn">Start Break</button>
+          <button id="btnEndBreak" class="warn">End Break</button>
+          <button id="btnOut" class="danger">End Shift</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Task</h3>
+        <div class="grid3">
+          <div><label for="selTask">Tasks</label><select id="selTask"></select></div>
+          <div><label for="selAccount">Accounts</label><select id="selAccount"></select></div>
+          <div><label for="ptName">PT / Dr name</label><textarea id="ptName" rows="2" placeholder="Paste name here"></textarea></div>
+        </div>
+        <div class="row" style="margin-top:14px"><button id="btnStartTask">Start Task</button></div>
+      </div>
+
+      <div class="card">
+        <div id="runningBox" class="running hidden">
+          <div style="color:var(--muted);font-size:12px;font-weight:700;text-transform:uppercase">In progress</div>
+          <div class="big" id="taskTimer">00:00:00</div>
+          <div id="runningInfo"></div>
+        </div>
+        <label for="notes">Notes (paste your notes here before completing the task)</label>
+        <textarea id="notes" placeholder="Paste or type your notes here..."></textarea>
+        <div class="row" style="margin-top:14px"><button id="btnComplete">Complete Task</button></div>
+      </div>
+    </section>
+
+    <!-- HISTORY -->
+    <section id="view-history" class="hidden">
+      <h2>My History — Today</h2>
+      <div class="stats" id="histStats"></div>
+      <div class="card tablewrap" id="histTable"></div>
+    </section>
+
+    <!-- ADMIN -->
+    <section id="view-admin" class="hidden">
+      <h2>Admin — All Staff</h2>
+      <div class="card">
+        <div class="row" style="align-items:flex-end">
+          <div><label for="fromDate">From</label><input type="date" id="fromDate"></div>
+          <div><label for="toDate">To</label><input type="date" id="toDate"></div>
+          <button id="btnLoadAdmin">Load</button>
+          <button id="btnCsv" class="secondary">Download CSV</button>
+        </div>
+      </div>
+      <div class="card tablewrap" id="adminSummary"></div>
+      <div class="card tablewrap" id="adminTable"></div>
+    </section>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* =====================================================================
+   SETTINGS: paste your two values from Supabase > Project Settings > API
+   (the anon/public key is meant to be public; security is the database rules)
+   ===================================================================== */
+const SUPABASE_URL = 'PASTE_YOUR_SUPABASE_URL';
+const SUPABASE_ANON_KEY = 'PASTE_YOUR_SUPABASE_ANON_KEY';
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtT = iso => iso ? new Date(iso).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '—';
+const fmtDT = iso => iso ? new Date(iso).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'}) : '—';
+const hms = sec => { sec = Math.max(0, Math.floor(sec)); const h = Math.floor(sec/3600), m = Math.floor(sec%3600/60), s = sec%60; return [h,m,s].map(n => String(n).padStart(2,'0')).join(':'); };
+const mins = sec => sec == null ? '—' : (sec/60).toFixed(1);
+
+let me = null, profile = null, ticker = null, lookupsLoaded = false;
+let S = { shift: null, brk: null, task: null, breakDoneSecs: 0 };
+let adminRows = [];
+
+function toast(msg, isErr) {
+  const t = $('toast'); t.textContent = msg; t.className = 'show' + (isErr ? ' err' : '');
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.className = '', 3500);
+}
+
+/* ---------------- auth ---------------- */
+$('loginForm').addEventListener('submit', async e => {
+  e.preventDefault(); $('loginErr').textContent = ''; $('loginBtn').disabled = true;
+  const { error } = await sb.auth.signInWithPassword({ email: $('email').value.trim(), password: $('password').value });
+  $('loginBtn').disabled = false;
+  if (error) $('loginErr').textContent = error.message;
+});
+$('signOut').addEventListener('click', () => sb.auth.signOut());
+
+sb.auth.onAuthStateChange((_evt, session) => { session ? startApp(session.user) : showLogin(); });
+sb.auth.getSession().then(({ data }) => { if (!data.session) showLogin(); });
+
+function showLogin() {
+  clearInterval(ticker); me = null;
+  $('app').classList.add('hidden'); $('login').classList.remove('hidden');
+}
+
+async function startApp(user) {
+  if (me && me.id === user.id) return;
+  me = user;
+  const { data, error } = await sb.from('profiles').select('*').eq('id', user.id).single();
+  if (error) { toast('Could not load your profile: ' + error.message, true); return; }
+  profile = data;
+  $('meName').textContent = profile.full_name || profile.email;
+  $('meRole').textContent = profile.role === 'admin' ? 'Admin' : 'Staff';
+  $('navAdmin').classList.toggle('hidden', profile.role !== 'admin');
+  $('login').classList.add('hidden'); $('app').classList.remove('hidden');
+  if (!lookupsLoaded) await loadLookups();
+  await refresh();
+  clearInterval(ticker); ticker = setInterval(tick, 1000);
+}
+
+async function loadLookups() {
+  const [t, a] = await Promise.all([
+    sb.from('task_types').select('id,name').eq('active', true).order('sort_order'),
+    sb.from('accounts').select('id,name').eq('active', true).order('name')
+  ]);
+  if (t.error || a.error) { toast('Could not load dropdown lists', true); return; }
+  const opts = rows => '<option value="">Select…</option>' + rows.map(r => `<option value="${r.id}">${esc(r.name)}</option>`).join('');
+  $('selTask').innerHTML = opts(t.data); $('selAccount').innerHTML = opts(a.data);
+  lookupsLoaded = true;
+}
+
+/* ---------------- navigation ---------------- */
+$('nav').addEventListener('click', e => {
+  const b = e.target.closest('button[data-view]'); if (!b) return;
+  document.querySelectorAll('#nav button').forEach(x => x.classList.toggle('active', x === b));
+  ['dashboard','history','admin'].forEach(v => $('view-' + v).classList.toggle('hidden', v !== b.dataset.view));
+  if (b.dataset.view === 'history') loadHistory();
+  if (b.dataset.view === 'admin') initAdmin();
+});
+
+/* ---------------- state ---------------- */
+async function refresh() {
+  const [s, b, t, bd] = await Promise.all([
+    sb.from('shifts').select('*').eq('user_id', me.id).is('end_shift', null).maybeSingle(),
+    sb.from('breaks').select('*').eq('user_id', me.id).is('end_at', null).maybeSingle(),
+    sb.from('task_logs').select('*, task_types(name), accounts(name)').eq('user_id', me.id).is('end_at', null).maybeSingle(),
+    null
+  ]);
+  if (s.error || b.error || t.error) { toast('Could not load your status: ' + (s.error || b.error || t.error).message, true); return; }
+  S.shift = s.data; S.brk = b.data; S.task = t.data; S.breakDoneSecs = 0;
+  if (S.shift) {
+    const done = await sb.from('breaks').select('start_at,end_at').eq('shift_id', S.shift.id).not('end_at', 'is', null);
+    S.breakDoneSecs = (done.data || []).reduce((n, r) => n + (new Date(r.end_at) - new Date(r.start_at)) / 1000, 0);
+  }
+  updateUI(); tick();
+}
+
+function updateUI() {
+  const { shift, brk, task } = S;
+  const pill = $('shiftPill');
+  pill.className = 'pill' + (brk ? ' brk' : shift ? ' on' : '');
+  pill.textContent = brk ? 'On break' : task ? 'Working on a task' : shift ? 'Clocked in' : 'Not clocked in';
+  $('btnIn').disabled = !!shift;
+  $('btnBreak').disabled = !shift || !!brk || !!task;
+  $('btnEndBreak').disabled = !brk;
+  $('btnOut').disabled = !shift || !!task;
+  $('btnStartTask').disabled = !shift || !!brk || !!task;
+  $('selTask').disabled = $('selAccount').disabled = $('ptName').disabled = !!task;
+  $('runningBox').classList.toggle('hidden', !task);
+  if (task) {
+    $('runningInfo').innerHTML = `<b>${esc(task.task_types?.name)}</b> — ${esc(task.accounts?.name)}` + (task.pt_name ? `<br>PT/Dr: ${esc(task.pt_name)}` : '');
+  }
+  $('notes').disabled = !task;
+  checkNotes();
+}
+function checkNotes() { $('btnComplete').disabled = !S.task || !$('notes').value.trim(); }
+$('notes').addEventListener('input', checkNotes);
+
+function tick() {
+  const now = Date.now();
+  $('shiftTimer').textContent = S.shift ? hms((now - new Date(S.shift.time_in)) / 1000) : '00:00:00';
+  const live = S.brk ? (now - new Date(S.brk.start_at)) / 1000 : 0;
+  $('breakTimer').textContent = hms(S.breakDoneSecs + live);
+  $('taskTimer').textContent = S.task ? hms((now - new Date(S.task.start_at)) / 1000) : '00:00:00';
+}
+
+/* ---------------- actions ---------------- */
+async function act(fn, args, okMsg) {
+  document.querySelectorAll('#view-dashboard button').forEach(b => b.disabled = true);
+  const { error } = await sb.rpc(fn, args);
+  if (error) toast(error.message, true); else if (okMsg) toast(okMsg);
+  await refresh();
+  return !error;
+}
+$('btnIn').onclick = () => act('clock_in', {}, 'Timed in');
+$('btnBreak').onclick = () => act('start_break', {}, 'Break started');
+$('btnEndBreak').onclick = () => act('end_break', {}, 'Break ended');
+$('btnOut').onclick = () => { if (confirm('End your shift now?')) act('end_shift', {}, 'Shift ended'); };
+
+$('btnStartTask').onclick = async () => {
+  const t = $('selTask').value, a = $('selAccount').value;
+  if (!t || !a) return toast('Choose a task and an account first', true);
+  const ok = await act('start_task', { p_task_type_id: +t, p_account_id: +a, p_pt_name: $('ptName').value }, 'Task started');
+  if (ok) $('notes').value = '';
+  checkNotes();
+};
+$('btnComplete').onclick = async () => {
+  const ok = await act('complete_task', { p_notes: $('notes').value }, 'Task completed');
+  if (ok) { $('notes').value = ''; $('ptName').value = ''; $('selTask').value = ''; $('selAccount').value = ''; checkNotes(); }
+};
+
+/* ---------------- history ---------------- */
+async function loadHistory() {
+  const start = new Date(); start.setHours(0, 0, 0, 0);
+  const { data, error } = await sb.from('report_task_logs').select('*').eq('email', me.email)
+    .gte('start_at', start.toISOString()).order('start_at', { ascending: false });
+  if (error) return toast(error.message, true);
+  const done = data.filter(r => r.end_at);
+  const totalSecs = done.reduce((n, r) => n + (r.duration_seconds || 0), 0);
+  $('histStats').innerHTML = `<div class="stat"><b>${done.length}</b><span>Tasks completed</span></div>
+    <div class="stat"><b>${mins(totalSecs)}</b><span>Task minutes</span></div>
+    <div class="stat"><b>${done.length ? mins(totalSecs / done.length) : '—'}</b><span>Avg min / task</span></div>`;
+  $('histTable').innerHTML = taskTable(data, false);
+}
+
+function taskTable(rows, showUser) {
+  if (!rows.length) return '<div class="empty">No tasks in this range.</div>';
+  return `<table><thead><tr>${showUser ? '<th>Staff</th>' : ''}<th>Start</th><th>End</th><th>Min</th><th>Task</th><th>Account</th><th>PT/Dr</th><th>Notes</th></tr></thead><tbody>` +
+    rows.map(r => `<tr>${showUser ? `<td>${esc(r.full_name || r.email)}</td>` : ''}<td>${fmtDT(r.start_at)}</td><td>${r.end_at ? fmtT(r.end_at) : '<i>running</i>'}</td><td>${mins(r.duration_seconds)}</td><td>${esc(r.task)}</td><td>${esc(r.account)}</td><td>${esc(r.pt_name)}</td><td class="notes">${esc(r.notes)}</td></tr>`).join('') +
+    '</tbody></table>';
+}
+
+/* ---------------- admin ---------------- */
+function initAdmin() {
+  if (!$('fromDate').value) {
+    const d = new Date(), f = new Date(); f.setDate(d.getDate() - 6);
+    const iso = x => new Date(x - x.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    $('fromDate').value = iso(f); $('toDate').value = iso(d); loadAdmin();
+  }
+}
+$('btnLoadAdmin').onclick = loadAdmin;
+async function loadAdmin() {
+  const from = new Date($('fromDate').value + 'T00:00:00');
+  const to = new Date($('toDate').value + 'T00:00:00'); to.setDate(to.getDate() + 1);
+  const { data, error } = await sb.from('report_task_logs').select('*')
+    .gte('start_at', from.toISOString()).lt('start_at', to.toISOString())
+    .order('start_at', { ascending: false }).limit(2000);
+  if (error) return toast(error.message, true);
+  adminRows = data;
+  const by = {};
+  data.filter(r => r.end_at).forEach(r => {
+    const k = r.full_name || r.email; by[k] = by[k] || { n: 0, secs: 0 };
+    by[k].n++; by[k].secs += r.duration_seconds || 0;
+  });
+  const names = Object.keys(by).sort();
+  $('adminSummary').innerHTML = names.length
+    ? '<table><thead><tr><th>Staff</th><th>Tasks done</th><th>Task minutes</th><th>Avg min / task</th></tr></thead><tbody>' +
+      names.map(k => `<tr><td>${esc(k)}</td><td>${by[k].n}</td><td>${mins(by[k].secs)}</td><td>${mins(by[k].secs / by[k].n)}</td></tr>`).join('') + '</tbody></table>'
+    : '<div class="empty">No completed tasks in this range.</div>';
+  $('adminTable').innerHTML = taskTable(data, true);
+}
+$('btnCsv').onclick = () => {
+  if (!adminRows.length) return toast('Load some data first', true);
+  const cols = ['full_name','email','task','account','pt_name','start_at','end_at','duration_seconds','notes'];
+  const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+  const csv = [cols.join(','), ...adminRows.map(r => cols.map(c => q(r[c])).join(','))].join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  a.download = 'task-logs.csv'; a.click();
+};
+</script>
+</body>
+</html>
