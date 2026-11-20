@@ -217,7 +217,11 @@ async function startApp(user) {
   if (me && me.id === user.id) return;
   me = user;
   const { data, error } = await sb.from('profiles').select('*').eq('id', user.id).single();
-  if (error) { toast('Could not load your profile: ' + error.message, true); return; }
+  if (error) {
+    await sb.auth.signOut(); showLogin();
+    $('loginErr').textContent = 'Could not load your profile: ' + error.message;
+    return;
+  }
   profile = data;
   $('meName').textContent = profile.full_name || profile.email;
   $('meRole').textContent = profile.role === 'admin' ? 'Admin' : 'Staff';
