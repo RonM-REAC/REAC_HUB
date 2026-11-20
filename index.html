@@ -228,7 +228,10 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-
+/* =====================================================================
+   SETTINGS: paste your two values from Supabase > Project Settings > API
+   (the anon/public key is meant to be public; security is the database rules)
+   ===================================================================== */
 const SUPABASE_URL = 'https://dulugntfxxpxyhpsgcbk.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_cmxj3HJ74b3gBBk8CqF0EQ_BLhIafVd';
 
@@ -326,7 +329,7 @@ $('formForgot').addEventListener('submit', async e => {
   await busy($('btnForgot'), async () => {
     const email = cleanEmail('fgEmail');
     const { error } = await sb.auth.resetPasswordForEmail(email);
-    if (error && /rate|too many|security purposes/i.test(error.message)) return setMsg(friendly(error));
+    if (error && /rate|too many|security purposes|sending|smtp/i.test(error.message)) return setMsg(friendly(error));
     pendingEmail = email; codeType = 'recovery';              // same screen whether or not the email exists
     showAuth('code'); startCooldown();
     setMsg('', 'If that Gmail has an account, a code is on its way.');
