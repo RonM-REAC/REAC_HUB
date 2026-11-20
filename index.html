@@ -24,14 +24,23 @@
   select:focus,input:focus,textarea:focus{outline:2px solid var(--accent);border-color:transparent}
   textarea{resize:vertical}
 
-  /* login */
+ 
   #login{min-height:100vh;display:grid;place-items:center;padding:20px}
   .login-card{background:var(--card);padding:32px;border-radius:16px;width:100%;max-width:380px;box-shadow:0 8px 30px rgba(20,33,61,.1)}
   .login-card h1{margin:0 0 4px;font-size:22px} .login-card p{margin:0 0 20px;color:var(--muted)}
   .login-card .field{margin-bottom:14px} .login-card button{width:100%}
-  #loginErr{color:var(--danger);font-size:13px;min-height:18px;margin-bottom:8px}
+  #loginErr{color:var(--danger);font-size:13px;margin-bottom:6px}
+  #loginInfo{color:var(--accent-d);font-size:13px;margin-bottom:10px}
+  #loginErr:empty,#loginInfo:empty{display:none}
+  .authlinks{display:flex;justify-content:space-between;margin-top:14px;font-size:13px}
+  .authlinks a,.linkbtn{color:var(--accent-d);cursor:pointer;text-decoration:none;font-weight:600;background:none;border:0;padding:0}
+  .linkbtn{width:auto!important;font-size:13px} .linkbtn:hover:not(:disabled){background:none;text-decoration:underline}
+  .login-card .linkbtn:disabled{color:var(--muted)}
+  #codeInput{font-size:24px;letter-spacing:.3em;text-align:center}
+  .chip{display:inline-block;background:#e8edf5;border-radius:99px;padding:4px 12px;margin:0 6px 6px 0;font-size:13px}
+  .chip a{color:var(--danger);margin-left:6px;font-size:12px;text-decoration:none}
 
-  /* app shell */
+
   #app{display:flex;min-height:100vh}
   aside{width:230px;background:var(--nav);color:var(--nav-ink);padding:20px 14px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
   aside .brand{font-weight:800;color:#fff;font-size:17px;margin:0 8px 22px}
@@ -81,19 +90,50 @@
 <body>
 <div id="toast"></div>
 
-<!-- ============ LOGIN ============ -->
 <section id="login" class="hidden">
-  <form class="login-card" id="loginForm">
+  <div class="login-card">
     <h1>REAC Time Tracker</h1>
-    <p>Sign in with your Gmail and password.</p>
-    <div class="field"><label for="email">Gmail</label><input id="email" type="email" autocomplete="username" required></div>
-    <div class="field"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required></div>
+    <p id="authSub"></p>
     <div id="loginErr"></div>
-    <button type="submit" id="loginBtn">Sign in</button>
-  </form>
+    <div id="loginInfo"></div>
+
+    <form id="formSignin" class="authstep">
+      <div class="field"><label for="email">Gmail</label><input id="email" type="email" autocomplete="username" required></div>
+      <div class="field"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required></div>
+      <button type="submit" id="loginBtn">Sign in</button>
+      <div class="authlinks"><a href="#" data-go="signup">Create account</a><a href="#" data-go="forgot">Forgot password?</a></div>
+    </form>
+
+    <form id="formSignup" class="authstep hidden">
+      <div class="field"><label for="suName">Full name</label><input id="suName" type="text" autocomplete="name" required></div>
+      <div class="field"><label for="suEmail">Gmail</label><input id="suEmail" type="email" autocomplete="username" required></div>
+      <div class="field"><label for="suPass">Password (at least 8 characters)</label><input id="suPass" type="password" autocomplete="new-password" minlength="8" required></div>
+      <div class="field"><label for="suPass2">Confirm password</label><input id="suPass2" type="password" autocomplete="new-password" minlength="8" required></div>
+      <button type="submit" id="btnSignup">Create account</button>
+      <div class="authlinks"><a href="#" data-go="signin">Back to sign in</a></div>
+    </form>
+
+    <form id="formCode" class="authstep hidden">
+      <div class="field"><label for="codeInput">Code from your email</label><input id="codeInput" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="10" required></div>
+      <button type="submit" id="btnVerify">Verify</button>
+      <div class="authlinks"><button type="button" class="linkbtn" id="btnResend">Resend code</button><a href="#" data-go="signin">Back to sign in</a></div>
+    </form>
+
+    <form id="formForgot" class="authstep hidden">
+      <div class="field"><label for="fgEmail">Gmail</label><input id="fgEmail" type="email" autocomplete="username" required></div>
+      <button type="submit" id="btnForgot">Email me a code</button>
+      <div class="authlinks"><a href="#" data-go="signin">Back to sign in</a></div>
+    </form>
+
+    <form id="formNewPass" class="authstep hidden">
+      <div class="field"><label for="npPass">New password (at least 8 characters)</label><input id="npPass" type="password" autocomplete="new-password" minlength="8" required></div>
+      <div class="field"><label for="npPass2">Confirm new password</label><input id="npPass2" type="password" autocomplete="new-password" minlength="8" required></div>
+      <button type="submit" id="btnNewPass">Save password</button>
+      <div class="authlinks"><a href="#" id="npCancel">Cancel</a></div>
+    </form>
+  </div>
 </section>
 
-<!-- ============ APP ============ -->
 <div id="app" class="hidden">
   <aside>
     <div class="brand">REAC Tracker</div>
@@ -106,7 +146,7 @@
   </aside>
 
   <main>
-    <!-- DASHBOARD -->
+    
     <section id="view-dashboard">
       <h2>Dashboard</h2>
 
@@ -146,16 +186,23 @@
       </div>
     </section>
 
-    <!-- HISTORY -->
     <section id="view-history" class="hidden">
       <h2>My History — Today</h2>
       <div class="stats" id="histStats"></div>
       <div class="card tablewrap" id="histTable"></div>
     </section>
 
-    <!-- ADMIN -->
     <section id="view-admin" class="hidden">
       <h2>Admin — All Staff</h2>
+      <div class="card">
+        <h3>Approved Gmails (who can create an account)</h3>
+        <div class="row" style="align-items:flex-end">
+          <div style="flex:1;min-width:220px"><label for="newAllowed">Gmail to approve</label><input type="email" id="newAllowed" placeholder="name@gmail.com"></div>
+          <button id="btnAddAllowed">Approve</button>
+        </div>
+        <div id="allowedList" style="margin-top:12px"></div>
+        <div style="font-size:12px;color:var(--muted);margin-top:6px">Removing an email only stops new sign-ups. To remove an existing person, delete them in Supabase > Authentication > Users.</div>
+      </div>
       <div class="card">
         <div class="row" style="align-items:flex-end">
           <div><label for="fromDate">From</label><input type="date" id="fromDate"></div>
@@ -172,10 +219,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-/* =====================================================================
-   SETTINGS: paste your two values from Supabase > Project Settings > API
-   (the anon/public key is meant to be public; security is the database rules)
-   ===================================================================== */
+
 const SUPABASE_URL = 'https://dulugntfxxpxyhpsgcbk.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_cmxj3HJ74b3gBBk8CqF0EQ_BLhIafVd';
 
@@ -196,21 +240,141 @@ function toast(msg, isErr) {
   clearTimeout(toast._t); toast._t = setTimeout(() => t.className = '', 3500);
 }
 
-/* ---------------- auth ---------------- */
-$('loginForm').addEventListener('submit', async e => {
-  e.preventDefault(); $('loginErr').textContent = ''; $('loginBtn').disabled = true;
-  const { error } = await sb.auth.signInWithPassword({ email: $('email').value.trim(), password: $('password').value });
-  $('loginBtn').disabled = false;
-  if (error) $('loginErr').textContent = error.message;
+
+let recovering = false, pendingEmail = '', codeType = 'signup', resendTimer = null;
+const STEPS = { signin: 'formSignin', signup: 'formSignup', code: 'formCode', forgot: 'formForgot', newpass: 'formNewPass' };
+const SUBS = {
+  signin: 'Sign in with your Gmail and password.',
+  signup: 'Create your account. Your Gmail must be approved by your supervisor first.',
+  forgot: 'Enter your Gmail and we will email you a code to reset your password.',
+  newpass: 'Choose a new password.'
+};
+const setMsg = (err, info) => { $('loginErr').textContent = err || ''; $('loginInfo').textContent = info || ''; };
+function showAuth(step) {
+  Object.keys(STEPS).forEach(k => $(STEPS[k]).classList.toggle('hidden', k !== step));
+  $('authSub').textContent = step === 'code' ? 'We sent a code to ' + pendingEmail + '. Enter it below.' : SUBS[step];
+  setMsg('', '');
+}
+function friendly(error) {
+  const m = (error.message || '').toLowerCase();
+  if (m.includes('database error')) return "This Gmail isn't approved yet. Ask your supervisor to approve it, then try again.";
+  if (m.includes('rate limit') || m.includes('too many') || m.includes('security purposes')) return 'Too many attempts. Please wait a minute and try again.';
+  if (m.includes('invalid login')) return 'Wrong email or password.';
+  if (m.includes('expired') || m.includes('invalid')) return 'That code is wrong or has expired. Request a new one.';
+  if (m.includes('same password') || m.includes('different from the old')) return 'Choose a password different from your old one.';
+  return error.message;
+}
+async function busy(btn, fn) { btn.disabled = true; try { await fn(); } finally { btn.disabled = false; } }
+function startCooldown() {
+  const b = $('btnResend'); let s = 60;
+  b.disabled = true; b.textContent = 'Resend code (60s)';
+  clearInterval(resendTimer);
+  resendTimer = setInterval(() => {
+    s--;
+    if (s <= 0) { clearInterval(resendTimer); b.disabled = false; b.textContent = 'Resend code'; }
+    else b.textContent = 'Resend code (' + s + 's)';
+  }, 1000);
+}
+const cleanEmail = id => $(id).value.trim().toLowerCase();
+
+document.querySelectorAll('[data-go]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); showAuth(a.dataset.go); }));
+
+
+$('formSignin').addEventListener('submit', async e => {
+  e.preventDefault(); setMsg('', '');
+  await busy($('loginBtn'), async () => {
+    const email = cleanEmail('email');
+    const { error } = await sb.auth.signInWithPassword({ email, password: $('password').value });
+    if (!error) return;
+    if ((error.message || '').toLowerCase().includes('not confirmed')) {   // signed up but never entered the code
+      pendingEmail = email; codeType = 'signup';
+      await sb.auth.resend({ type: 'signup', email });
+      showAuth('code'); startCooldown();
+      return setMsg('', 'Your email is not confirmed yet. We sent you a new code.');
+    }
+    setMsg(friendly(error));
+  });
 });
+
+
+$('formSignup').addEventListener('submit', async e => {
+  e.preventDefault(); setMsg('', '');
+  if ($('suPass').value.length < 8) return setMsg('Password must be at least 8 characters.');
+  if ($('suPass').value !== $('suPass2').value) return setMsg('The two passwords do not match.');
+  await busy($('btnSignup'), async () => {
+    const email = cleanEmail('suEmail');
+    const { error } = await sb.auth.signUp({ email, password: $('suPass').value, options: { data: { full_name: $('suName').value.trim() } } });
+    if (error) return setMsg(friendly(error));
+    pendingEmail = email; codeType = 'signup';
+    showAuth('code'); startCooldown();
+    setMsg('', 'Check your inbox (and spam) for the code. If you already have an account, go back and use "Forgot password?" instead.');
+  });
+});
+
+
+$('formForgot').addEventListener('submit', async e => {
+  e.preventDefault(); setMsg('', '');
+  await busy($('btnForgot'), async () => {
+    const email = cleanEmail('fgEmail');
+    const { error } = await sb.auth.resetPasswordForEmail(email);
+    if (error && /rate|too many|security purposes/i.test(error.message)) return setMsg(friendly(error));
+    pendingEmail = email; codeType = 'recovery';              // same screen whether or not the email exists
+    showAuth('code'); startCooldown();
+    setMsg('', 'If that Gmail has an account, a code is on its way.');
+  });
+});
+
+
+$('formCode').addEventListener('submit', async e => {
+  e.preventDefault(); setMsg('', '');
+  await busy($('btnVerify'), async () => {
+    if (codeType === 'recovery') recovering = true;            // stop the app opening before a new password is set
+    const { error } = await sb.auth.verifyOtp({ email: pendingEmail, token: $('codeInput').value.trim(), type: codeType });
+    if (error) { if (codeType === 'recovery') recovering = false; return setMsg(friendly(error)); }
+    $('codeInput').value = '';
+    if (codeType === 'recovery') showAuth('newpass');          // signup: the sign-in event opens the app
+  });
+});
+$('btnResend').addEventListener('click', async () => {
+  const { error } = codeType === 'signup'
+    ? await sb.auth.resend({ type: 'signup', email: pendingEmail })
+    : await sb.auth.resetPasswordForEmail(pendingEmail);
+  if (error) return setMsg(friendly(error));
+  startCooldown(); setMsg('', 'A new code was sent.');
+});
+
+
+$('formNewPass').addEventListener('submit', async e => {
+  e.preventDefault(); setMsg('', '');
+  if ($('npPass').value.length < 8) return setMsg('Password must be at least 8 characters.');
+  if ($('npPass').value !== $('npPass2').value) return setMsg('The two passwords do not match.');
+  await busy($('btnNewPass'), async () => {
+    const { error } = await sb.auth.updateUser({ password: $('npPass').value });
+    if (error) return setMsg(friendly(error));
+    recovering = false; $('npPass').value = $('npPass2').value = '';
+    toast('Password updated');
+    const { data } = await sb.auth.getSession();
+    data.session ? startApp(data.session.user) : showAuth('signin');
+  });
+});
+$('npCancel').addEventListener('click', async e => { e.preventDefault(); recovering = false; await sb.auth.signOut(); showAuth('signin'); });
+
 $('signOut').addEventListener('click', () => sb.auth.signOut());
 
-sb.auth.onAuthStateChange((_evt, session) => { session ? startApp(session.user) : showLogin(); });
+sb.auth.onAuthStateChange((evt, session) => {
+  if (evt === 'PASSWORD_RECOVERY') {
+    recovering = true; $('app').classList.add('hidden'); $('login').classList.remove('hidden'); showAuth('newpass'); return;
+  }
+  if (recovering) return;
+  session ? startApp(session.user) : showLogin();
+});
 sb.auth.getSession().then(({ data }) => { if (!data.session) showLogin(); });
 
 function showLogin() {
   clearInterval(ticker); me = null;
+  const wasHidden = $('login').classList.contains('hidden');
   $('app').classList.add('hidden'); $('login').classList.remove('hidden');
+  if (wasHidden && !recovering) showAuth('signin');
 }
 
 async function startApp(user) {
@@ -243,16 +407,14 @@ async function loadLookups() {
   lookupsLoaded = true;
 }
 
-/* ---------------- navigation ---------------- */
 $('nav').addEventListener('click', e => {
   const b = e.target.closest('button[data-view]'); if (!b) return;
   document.querySelectorAll('#nav button').forEach(x => x.classList.toggle('active', x === b));
   ['dashboard','history','admin'].forEach(v => $('view-' + v).classList.toggle('hidden', v !== b.dataset.view));
   if (b.dataset.view === 'history') loadHistory();
-  if (b.dataset.view === 'admin') initAdmin();
+  if (b.dataset.view === 'admin') { initAdmin(); loadAllowed(); }
 });
 
-/* ---------------- state ---------------- */
 async function refresh() {
   const [s, b, t, bd] = await Promise.all([
     sb.from('shifts').select('*').eq('user_id', me.id).is('end_shift', null).maybeSingle(),
@@ -298,7 +460,6 @@ function tick() {
   $('taskTimer').textContent = S.task ? hms((now - new Date(S.task.start_at)) / 1000) : '00:00:00';
 }
 
-/* ---------------- actions ---------------- */
 async function act(fn, args, okMsg) {
   document.querySelectorAll('#view-dashboard button').forEach(b => b.disabled = true);
   const { error } = await sb.rpc(fn, args);
@@ -323,7 +484,6 @@ $('btnComplete').onclick = async () => {
   if (ok) { $('notes').value = ''; $('ptName').value = ''; $('selTask').value = ''; $('selAccount').value = ''; checkNotes(); }
 };
 
-/* ---------------- history ---------------- */
 async function loadHistory() {
   const start = new Date(); start.setHours(0, 0, 0, 0);
   const { data, error } = await sb.from('report_task_logs').select('*').eq('email', me.email)
@@ -344,7 +504,6 @@ function taskTable(rows, showUser) {
     '</tbody></table>';
 }
 
-/* ---------------- admin ---------------- */
 function initAdmin() {
   if (!$('fromDate').value) {
     const d = new Date(), f = new Date(); f.setDate(d.getDate() - 6);
@@ -373,6 +532,29 @@ async function loadAdmin() {
     : '<div class="empty">No completed tasks in this range.</div>';
   $('adminTable').innerHTML = taskTable(data, true);
 }
+async function loadAllowed() {
+  const { data, error } = await sb.from('allowed_emails').select('email').order('email');
+  if (error) return toast(error.message, true);
+  $('allowedList').innerHTML = data.length
+    ? data.map(r => `<span class="chip">${esc(r.email)}<a href="#" data-rm="${esc(r.email)}">remove</a></span>`).join('')
+    : '<div class="empty">No approved Gmails yet.</div>';
+}
+$('btnAddAllowed').onclick = async () => {
+  const e = $('newAllowed').value.trim().toLowerCase();
+  if (!e || !e.includes('@')) return toast('Enter a valid Gmail', true);
+  const { error } = await sb.from('allowed_emails').insert({ email: e });
+  if (error) return toast(error.message, true);
+  $('newAllowed').value = ''; toast('Approved'); loadAllowed();
+};
+$('allowedList').addEventListener('click', async ev => {
+  const a = ev.target.closest('[data-rm]'); if (!a) return;
+  ev.preventDefault();
+  if (!confirm('Remove ' + a.dataset.rm + ' from the approved list?')) return;
+  const { error } = await sb.from('allowed_emails').delete().eq('email', a.dataset.rm);
+  if (error) return toast(error.message, true);
+  loadAllowed();
+});
+
 $('btnCsv').onclick = () => {
   if (!adminRows.length) return toast('Load some data first', true);
   const cols = ['full_name','email','task','account','pt_name','start_at','end_at','duration_seconds','notes'];
